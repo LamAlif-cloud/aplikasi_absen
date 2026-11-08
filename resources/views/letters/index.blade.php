@@ -1,0 +1,24 @@
+@extends('layouts.app')
+@section('title', 'Surat & Tindak Lanjut')
+@section('content')
+<div class="heading"><div><p class="eyebrow">PEMBINAAN SISWA</p><h1>Surat & Tindak Lanjut</h1><p class="muted">Surat dibuat oleh petugas setelah memeriksa akumulasi Alpa semester, bukan otomatis diterbitkan.</p></div></div>
+@if(empty($schoolSettings['vice_principal_name']) || empty($schoolSettings['bp_name']) || empty($schoolSettings['principal_name']))
+<div class="alert notice">Sebelum mencetak surat resmi, lengkapi <strong>Nama Waka Kesiswaan, Petugas BP, dan Kepala Madrasah</strong> melalui @if(auth()->user()->role === 'admin')<a href="{{ route('settings.school') }}">Profil Madrasah</a>@else menu Profil Madrasah oleh administrator @endif. Jika belum diisi, kolom tanda tangan dicetak sebagai garis kosong.</div>
+@endif
+<section class="panel"><form method="GET" class="toolbar"><label>Tahun pelajaran<select name="academic_year" onchange="this.form.submit()">@foreach($years as $y)<option value="{{ $y }}" @selected($year===$y)>{{ $y }}</option>@endforeach</select></label><label>Semester<select name="semester"><option value="Ganjil" @selected($semester==='Ganjil')>Ganjil</option><option value="Genap" @selected($semester==='Genap')>Genap</option></select></label><button class="btn primary">Tampilkan</button></form></section>
+<div class="two-cols uneven"><section class="panel"><h2>Siswa memenuhi ambang</h2><div class="table-wrap"><table><thead><tr><th>Nama siswa</th><th>Alpa JP</th><th>Tahap tertinggi</th></tr></thead><tbody>@forelse($eligible as $r)<tr><td><strong>{{ $r->full_name }}</strong><small class="muted">{{ $r->class_label }}</small></td><td>{{ $r->alpa_jp }}</td><td><span class="status status-{{ $r->level }}">{{ \App\Services\Discipline::levelLabel($r->level) }}</span></td></tr>@empty<tr><td colspan="3" class="empty">Belum ada siswa mencapai 24 JP semester ini.</td></tr>@endforelse</tbody></table></div></section>
+<section class="panel"><h2>Buat surat</h2><p class="muted small">Alpa 24/48/72 JP per semester. Nama pengirim dan Kepala Madrasah diambil dari Profil Madrasah. Cetakan menyertakan total Sakit–Izin–Alpa semester. Satu surat tiap siswa/tahap/semester.</p><form method="POST" action="{{ route('letters.store') }}">@csrf
+<input type="hidden" name="academic_year" value="{{ $year }}"><input type="hidden" name="semester" value="{{ $semester }}">
+<label>Siswa<select name="student_id" required><option value="">Pilih siswa</option>@foreach($eligible as $r)<option value="{{ $r->student_id }}">{{ $r->full_name }} · {{ $r->alpa_jp }} JP</option>@endforeach</select></label>
+<label>Tujuan/jenis surat<select name="level" required>
+<option value="1">3 hari / 24 JP — Kepada Wali Kelas · dari Waka Kesiswaan</option>
+<option value="2">6 hari / 48 JP — Kepada BP · dari Waka Kesiswaan</option>
+<option value="3">9 hari / 72 JP — Kepada Wali Murid · dari BP, diketahui Kepala</option>
+</select></label>
+<label>Nomor surat<input name="letter_number" required maxlength="100" placeholder="Nomor surat resmi madrasah"></label>
+<label>Tanggal surat<input type="date" name="letter_date" value="{{ date('Y-m-d') }}" required></label>
+<label>Jadwal pemanggilan (jika ada)<input type="date" name="meeting_date"></label>
+<label>Keterangan<textarea name="notes" rows="3" maxlength="2000"></textarea></label>
+<button class="btn primary" type="submit">Simpan surat</button></form></section></div>
+<section class="panel"><h2>Riwayat Surat Semester {{ $semester }}</h2><div class="table-wrap"><table><thead><tr><th>No. Surat</th><th>Siswa</th><th>Tahap</th><th>Tanggal</th><th>Status</th><th></th></tr></thead><tbody>@forelse($letters as $l)@php($bolehSurat = (bool)($letterValidity[$l->id] ?? false))<tr><td>{{ $l->letter_number }}</td><td>{{ $l->student->full_name }}</td><td>{{ \App\Services\Discipline::levelLabel($l->level) }}</td><td>{{ $l->letter_date->format('d-m-Y') }}</td><td>{{ ['draft' => 'Belum diterbitkan', 'issued' => 'Diterbitkan', 'completed' => 'Selesai'][$l->status] ?? $l->status }} @unless($bolehSurat)<div class="alert danger">Surat diblokir — Alpa semester tidak memenuhi ambang. Periksa data.</div>@endunless @if($bolehSurat && $l->status!=='completed')<form action="{{ route('letters.status',$l) }}" method="POST" class="no-print">@csrf<input type="hidden" name="status" value="{{ $l->status==='draft'?'issued':'completed' }}"><button class="btn btn-sm" type="submit">{{ $l->status==='draft'?'Terbitkan':'Tandai selesai' }}</button></form>@endif</td><td><div class="actions">@if($bolehSurat)<a class="btn btn-sm" href="{{ route('letters.print', $l) }}" target="_blank" rel="noopener">Cetak / Print</a><a class="btn btn-sm" href="{{ route('letters.pdf', $l) }}">Unduh PDF</a>@else<span class="small muted">Tidak dapat dicetak sebelum data benar</span>@endif</div></td></tr>@empty<tr><td colspan="6" class="empty">Belum ada surat.</td></tr>@endforelse</tbody></table></div></section>
+@endsection

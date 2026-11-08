@@ -1,0 +1,11 @@
+@extends('layouts.app')
+@section('title', 'Wali Kelas')
+@section('content')
+<div class="heading"><div><p class="eyebrow">DATA INDUK</p><h1>Penugasan Wali Kelas</h1><p class="muted">Satu wali kelas per kelas dan tahun pelajaran. Menghapus penugasan tidak menghapus kelas.</p></div><a class="btn" href="{{ route('excel.export',['type'=>'teachers','academic_year'=>$year]) }}">Ekspor Wali Kelas Excel</a></div>
+<section class="panel no-print"><form method="GET" class="toolbar"><label>Tahun pelajaran<select name="academic_year">@foreach($years as $y)<option value="{{ $y }}" @selected($year===$y)>{{ $y }}</option>@endforeach</select></label><button class="btn primary">Tampilkan</button><a class="btn" href="{{ route('classes.index',['academic_year'=>$year]) }}">Data Kelas</a></form></section>
+<section class="panel"><div class="panel-head"><h2>Wali Kelas Tahun {{ $year }}</h2><span class="tag">{{ $classes->count() }} kelas</span></div><div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Jumlah siswa</th><th>Nama Wali Kelas</th>@if(auth()->user()->role==='admin')<th class="no-print">Tindakan</th>@endif</tr></thead><tbody>
+@forelse($classes as $c)<tr><td><strong>{{ $c->class_name }}</strong></td><td>{{ $c->students_count }}</td><td>@if(auth()->user()->role==='admin')<form method="POST" action="{{ route('teachers.update',$c) }}" id="teacher-{{ $c->id }}">@csrf @method('PUT')<input class="teacher-name" name="homeroom_teacher" value="{{ $c->homeroom_teacher }}" maxlength="120" required placeholder="Isi nama wali kelas" aria-label="Wali kelas {{ $c->class_name }}"></form>@else{{ $c->homeroom_teacher ?: 'Belum ditetapkan' }}@endif</td>
+@if(auth()->user()->role==='admin')<td class="no-print"><div class="actions"><button form="teacher-{{ $c->id }}" class="btn btn-sm primary">Simpan/Edit</button><form method="POST" action="{{ route('teachers.destroy',$c) }}" onsubmit="return confirm('Kosongkan penugasan wali kelas {{ $c->class_name }}? Siswa dan kelas tidak terhapus.')">@csrf @method('DELETE')<input type="hidden" name="confirm_delete" value="1"><button class="btn btn-sm danger-outline" type="submit">Hapus Wali</button></form></div></td>@endif</tr>
+@empty<tr><td colspan="4" class="empty">Belum ada kelas untuk tahun ini. Impor atau tambahkan kelas terlebih dahulu.</td></tr>@endforelse
+</tbody></table></div></section>
+@endsection

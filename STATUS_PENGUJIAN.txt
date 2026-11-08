@@ -1,0 +1,7 @@
+LamAlif Laravel Tahap 5 — STATUS PERIKSA
+
+KODE: lint PHP, nama rute, referensi Blade/controller, integritas ZIP diperiksa.
+LOGIKA: input JP Mingguan / Bulanan disatukan melalui layanan agregasi; pembatas input ganda ditambah.
+PENGUJIAN NYATA: php artisan test / MySQL / browser belum berjalan di lingkungan pengembang.
+AKSI WAJIB DI WINDOWS: backup data; copy kode tanpa menimpa .env/vendor/storage; php artisan migrate; php artisan test; uji manual menu.
+JANGAN: php artisan migrate:fresh, reset sebelum backup pulih teruji, upload online sebelum audit keamanan.
